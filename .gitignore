@@ -31,4 +31,4 @@ dist/
 *.egg-info/
 
 # Data
-data/
+data/*.hdf5
