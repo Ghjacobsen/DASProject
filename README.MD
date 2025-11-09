@@ -31,4 +31,16 @@ This project focuses on anomaly detection and instance segmentation for identify
 
 Jeg har prøvet at replikere i CAE.ipynb den model eller approachd e bruger i Label-Free Anomaly Detection. jeg skal bruge noget ground truth data, altså data hvor ingen skibe findes for virkelig at kunne få det op at virke. Jeg kan beskrive resultater senere.
 
-Planen er også at implementere en GRAPH DFNN ved nærmere lejlighed.
+# IDEER TIL VIDERUDVIKLING AF GRAPH DIFFUSION NN
+
+You don't necessarily have to replace your GraphDiffusion model, which is proving successful at detection. Instead, you can use the principles of SOLV to enhance your feature extraction for the clustering step:
+
+Detection (GraphDiffusion Output): Use your trained GD model to identify and isolate the top anomalous patches (high reconstruction error scores).
+
+Feature Extraction (SOLV Concept): For every anomalous patch identified by GD, you would apply the core Velocity Estimation technique from the SOLV paper (likely involving techniques like the Radon transform or Spatio-Temporal Image Velocimetry (STIV)) to extract the following features:
+
+Estimated Velocity: (Speed and Direction)
+
+Localization Coordinates: (Precise distance on the cable)
+
+Clustering: Feed these extracted features (Anomaly Score, Velocity, Localization) into your clustering algorithm (e.g., k-means or DBSCAN). These quantitative features will lead to much cleaner clusters than using raw spectrogram features alone.
