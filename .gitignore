@@ -33,7 +33,8 @@ dist/
 # Data
 data/*.hdf5
 data/GC_data/*.hdf5
-
+data/DataNat/*.hdf5
+data/nydata/*.hdf5
 Graph Diffusion/*
 !Graph Diffusion/**/*.py
 
