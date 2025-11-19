@@ -11,7 +11,7 @@ from scipy.spatial.distance import pdist, squareform
 # --- Project Parameters ---
 # IMPORTANT: Adjust the path if running from a different location relative to 'data'
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "../data/GC_data") # Assuming 'Graph Diffusion' is a subfolder
+DATA_DIR = os.path.join(BASE_DIR, "../data/GC_data/20250702") # Assuming 'Graph Diffusion' is a subfolder
 OUTPUT_DIR = BASE_DIR
 
 import sys
@@ -26,11 +26,11 @@ print(f"Number of files in file_paths: {len(file_paths)}")
 W_TIME = 300
 C_PATCH = 128
 S_STRIDE = 150
-CHANNEL_STEP = 4
+CHANNEL_STEP = 1  # use every channel in the selected distance window
 GRAPH_THRESHOLD_D = 3
 
-TRAIN_RATIO = 0.8
-SIMULATED_ANOMALY_THRESHOLD = 0.8 # Used for simulated labels (not used here, but kept)
+TRAIN_RATIO = 0.9
+#SIMULATED_ANOMALY_THRESHOLD = 0.8 # Used for simulated labels (not used here, but kept)
 
 # --- 1. DATA LOADING AND INITIAL DOWNSAMPLING ---
 
@@ -48,11 +48,16 @@ fs = 1/dt
 distance_array_m = channels_raw * dx
 distance_array_km = distance_array_m / 1000
 
-# Masking logic
-dmin_km, dmax_km = 0, 30 
+# Masking logic -- select a focused window between 19.5 km and 22.0 km
+# and keep every channel within that window (no further spatial downsampling).
+dmin_km, dmax_km = 19.5, 22.0
 dist_mask = (distance_array_km >= dmin_km) & (distance_array_km <= dmax_km)
+print('Number selected:', dist_mask.sum())
+print('First few km positions:', distance_array_km[dist_mask][:10])
+print('Channels selected:', np.where(dist_mask)[0])
 
-downsampled_channels = channels_raw[dist_mask][::CHANNEL_STEP]
+# Keep every channel inside the selected km window (CHANNEL_STEP == 1)
+downsampled_channels = channels_raw[dist_mask]
 C_TOTAL_DOWNSAMPLED = len(downsampled_channels)
 
 print(f"Total Channels in file: {len(channels_raw)}")
@@ -61,10 +66,12 @@ print(f"Downsampled Channels (C_TOTAL_DOWNSAMPLED): {C_TOTAL_DOWNSAMPLED}")
 for file_idx, file_path in enumerate(tqdm(file_paths, desc="Loading Files")):
     try:
         with h5py.File(file_path, 'r') as f:
-            data = f['data'][:] # Load all data (Time, Channels)
-            
-            # Apply distance mask and downsampling
-            data = data[:, dist_mask][::1, ::CHANNEL_STEP] # Spatial downsampling
+            data = f['data'][:]  # Load all data (Time, Channels)
+
+            # Apply the distance mask to keep only the configured km window.
+            # We do NOT apply further spatial downsampling here because we want
+            # every channel between dmin_km and dmax_km.
+            data = data[:, dist_mask]
             
             all_data.append(data)
             file_metadata.append({

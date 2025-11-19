@@ -173,7 +173,7 @@ print(f"Anomaly Threshold (Top {100-PERCENTILE}%) : {anomaly_threshold:.6f}")
 print("-------------------------------------------------------")
 
 # --- 5. Identify Top Anomalous Files ---
-print("\n--- 5. Identifying Top 5 Anomalous Files (Actionable Insight) ---")
+print("\n--- 5. Identifying Top 10 Anomalous Files (Actionable Insight) ---")
 
 file_scores = {}
 file_counts = {}
@@ -184,22 +184,21 @@ for i, result in enumerate(test_error):
     file_counts[name] = file_counts.get(name, 0) + 1
 
 avg_file_scores = {name: file_scores[name] / file_counts[name] for name in file_scores}
-top_files = sorted(avg_file_scores.items(), key=lambda item: item[1], reverse=True)[:5]
+top_files = sorted(avg_file_scores.items(), key=lambda item: item[1], reverse=True)[:10]
 
-print("\nTop 5 Most Anomalous HDF5 Files (Highest Average Score):")
+print("\nTop 10 Most Anomalous HDF5 Files (Highest Average Score):")
 print("-------------------------------------------------------")
 for rank, (file_name, avg_score) in enumerate(top_files):
     print(f"Rank {rank+1}: {file_name} (Average Score: {avg_score:.6f})")
 
-# --- 6. Visualize the Top 5 Anomalous Patches ---
+# --- 6. Visualize the Top 10 Anomalous Patches ---
 print("\n--- 6. Visualizing the Top Anomalous Patches for Inspection ---")
 
-top_k_patches = np.argsort(test_error)[::-1][:5]
+top_k_patches = np.argsort(test_error)[::-1][:10]
 X_test_raw_np = X_test.squeeze() # Original input patches
 
 fig, axes = plt.subplots(5, 2, figsize=(12, 10))
-fig.suptitle('GraphDiffusion: Top 5 Anomalous Patches (Input vs. Reconstruction)', fontsize=14)
-
+fig.suptitle('GraphDiffusion: Top 10 Anomalous Patches (Input vs. Reconstruction)', fontsize=14)
 for i, patch_idx in enumerate(top_k_patches):
     input_patch = X_test_raw_np[patch_idx]
     reconstructed_patch = X_test_pred[patch_idx].squeeze()
