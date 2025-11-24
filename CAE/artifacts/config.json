@@ -1,0 +1,19 @@
+{
+  "BASE_DIR": "C:\\Users\\45422\\Desktop\\DASProject\\data\\GC_data",
+  "TEST_SUBDIR": "20250702",
+  "DMIN_KM": 19.5,
+  "DMAX_KM": 22.0,
+  "SAMPLE_STEP": 1,
+  "CHANNEL_STEP": 1,
+  "TIME_PATCH_STEPS": 128,
+  "DISTANCE_PATCH_STEPS": 128,
+  "PATCH_OVERLAP": 0.1,
+  "dx": 1.0213001907746815,
+  "dt": 0.0016,
+  "MAX_TRAIN_FILES": 30,
+  "MAX_TEST_FILES": 10,
+  "MAX_TRAIN_TIME_STEPS": 60000,
+  "MAX_TEST_TIME_STEPS": 60000,
+  "USE_FLOAT16": true,
+  "channels_selected": 1224
+}
