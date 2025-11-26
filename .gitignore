@@ -40,6 +40,13 @@ data/GC_data/20250702/*.hdf5
 Graph Diffusion/*
 !Graph Diffusion/**/*.py
 
+
+#AIS
+AIS/*.csv
+AIS/*.zip
+
+
+
 # Ignore large dataset files
 *.npy
 *.npz
