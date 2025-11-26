@@ -31,12 +31,12 @@ dist/
 *.egg-info/
 
 # Data
-data/*.hdf5
-data/GC_data/*.hdf5
-data/DataNat/*.hdf5
-data/nydata/*.hdf5
-data/GC_data/20250702/*.hdf5
-
+raw_data/*.hdf5
+raw_data/GC_data/*.hdf5
+raw_data/DataNat/*.hdf5
+raw_data/nydata/*.hdf5
+raw_data/GC_data/20250702/*.hdf5
+raw_data/GC_data/20250629/*.hdf5
 Graph Diffusion/*
 !Graph Diffusion/**/*.py
 
@@ -54,3 +54,5 @@ AIS/*.zip
 *.csv
 *.h5
 *.pt
+AIS/zip/aisdk-2025-06-29.zip
+AIS/zip/aisdk-2025-07-02.zip
