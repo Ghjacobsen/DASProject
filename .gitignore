@@ -20,7 +20,7 @@ __pycache__/
 .env
 
 # Logs
-*.log
+
 
 # Tests
 .pytest_cache/
@@ -42,8 +42,11 @@ Graph Diffusion/*
 
 
 #AIS
-AIS/*.csv
+
 AIS/*.zip
+
+!New_CAE/results/*.csv
+!New_CAE/runs/*.csv
 
 
 
@@ -51,7 +54,6 @@ AIS/*.zip
 *.npy
 *.npz
 *.pkl
-*.csv
 *.h5
 *.pt
 AIS/zip/aisdk-2025-06-29.zip

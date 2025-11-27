@@ -55,16 +55,18 @@ def build_cnn_model(learning_rate, dropout_rate, num_conv_layers):
     Builds a flexible CNN model based on hyperparameter inputs.
     """
     model = Sequential()
-    input_shape = (*getattr(CFG, 'IMAGE_SIZE', (256, 256)), getattr(CFG, 'CHANNELS', 3))
+    channels = 1 if getattr(CFG, 'GRAYSCALE_INPUT', False) else getattr(CFG, 'CHANNELS', 3)
+    input_shape = (*getattr(CFG, 'IMAGE_SIZE', (256, 256)), channels)
     
     # Initial Conv Block (slightly wider + 5x5 kernel helps diagonal patterns)
-    model.add(Conv2D(48, (5, 5), activation='relu', input_shape=input_shape))
+    model.add(Conv2D(64, (5, 5), activation='relu', input_shape=input_shape))
     model.add(MaxPooling2D((2, 2)))
     model.add(Dropout(dropout_rate))
 
     # Dynamic Conv Blocks based on num_conv_layers
     for i in range(num_conv_layers - 1):
-        filters = 64 * (2 ** i)
+        # Increase deeper capacity for large inputs (128, 256, ...)
+        filters = 128 * (2 ** i)
         model.add(Conv2D(filters, (3, 3), activation='relu'))
         model.add(MaxPooling2D((2, 2)))
         model.add(Dropout(dropout_rate))
@@ -79,9 +81,22 @@ def build_cnn_model(learning_rate, dropout_rate, num_conv_layers):
     model.add(Dense(1, activation='sigmoid'))
     
     # Compile the model
+    # Loss: focal or BCE
+    if getattr(CFG, 'USE_FOCAL_LOSS', False):
+        alpha = float(getattr(CFG, 'FOCAL_ALPHA', 0.25))
+        gamma = float(getattr(CFG, 'FOCAL_GAMMA', 2.0))
+        def focal_loss(y_true, y_pred):
+            epsilon = tf.keras.backend.epsilon()
+            y_pred = tf.clip_by_value(y_pred, epsilon, 1.0 - epsilon)
+            pt = y_true * y_pred + (1 - y_true) * (1 - y_pred)
+            w = alpha * tf.pow(1.0 - pt, gamma)
+            return tf.reduce_mean(w * tf.keras.losses.binary_crossentropy(y_true, y_pred))
+        loss_fn = focal_loss
+    else:
+        loss_fn = 'binary_crossentropy'
     model.compile(
         optimizer=Adam(learning_rate=learning_rate),
-        loss='binary_crossentropy',
+        loss=loss_fn,
         metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall(), F1Score()]
     )
     return model

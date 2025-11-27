@@ -8,27 +8,38 @@ PREDICTIONS_OUTPUT_FILE = 'unseen_data_predictions.csv'
 RESULTS_DIR = 'results'  # central folder for champion model, temp best weights, test predictions
 
 # Image Parameters
-IMAGE_SIZE = (256, 256)
-CHANNELS = 3  # PNGs are often loaded as 3-channel RGB
+IMAGE_SIZE = (512, 1024)
+CHANNELS = 3  # RGB input for high-fidelity signals
 BATCH_SIZE = 32
 RANDOM_SEED = 42
 TEST_SIZE_FRACTION = 0.20   # 20% of remaining data used for test
 VALIDATION_SIZE_FRACTION = 0.15 # 15% of remaining data used for validation
 TEST_SAMPLES_PER_CLASS = 5  # legacy; not used in tactical split
 
-# Training Parameters
-EPOCHS_PER_RUN = 15 # Number of epochs for each hyperparameter combination
+EPOCHS_PER_RUN = 10 # Limit epochs per run to reduce memory/time
 PATIENCE = 5        # Early stopping patience
 
 # --- Hyperparameter Search Space ---
 # The script will iterate through all combinations of these parameters.
 HYPERPARAMETER_SPACE = {
-    'learning_rate': [0.001, 0.0005],
-    'dropout_rate': [0.2, 0.3],
+    'learning_rate': [0.01,0.003, 0.001, 0.0005],
+    'dropout_rate': [0.15],
     'num_conv_layers': [2, 3] # Number of blocks (Conv2D + MaxPool)
 }
-# Total runs: 2 * 2 * 2 = 8 runs   
+# Total runs: 4 * 1 * 2 = 8 runs
 
 # Data Pipeline Tweaks
 # Set to True only if you consume full datasets each epoch (no steps_per_epoch truncation)
 CACHE_DATASETS = False
+
+# Training Tweaks
+USE_FOCAL_LOSS = True
+FOCAL_ALPHA = 0.25
+FOCAL_GAMMA = 2.0
+REDUCE_LR_ON_PLATEAU = False
+REDUCE_LR_FACTOR = 0.5
+REDUCE_LR_PATIENCE = 3
+
+# Data Tweaks
+GRAYSCALE_INPUT = False  # use RGB channels
+OVERSAMPLE_SHIPS_FACTOR = 2  # duplicate ship samples in train split

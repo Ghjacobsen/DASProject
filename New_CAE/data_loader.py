@@ -33,30 +33,12 @@ def load_and_split_data():
     print(f"Loading labeled data from: {labeled_root}")
     paths, labels = _list_labeled_paths(labeled_root)
 
-    # Identify Day A (prefix '00') and Day B ('12' or '13') by filename prefix
-    def prefix(fname):
-        base = os.path.basename(fname)
-        return base[:2]
-
-    is_day_a_ship = np.array([(prefix(p) == '00') and (lab == 1) for p, lab in zip(paths, labels)])
-    day_a_ship_paths = paths[is_day_a_ship]
-    day_a_ship_labels = labels[is_day_a_ship]
-    if len(day_a_ship_paths) == 0:
-        print("Warning: no Day A ship images found. Proceeding without forced test inclusion.")
-    else:
-        print(f"Day A ship images found: {len(day_a_ship_paths)}")
-
-    # Remaining data excludes the Day A ship image
-    remain_mask = ~is_day_a_ship
-    remain_paths = paths[remain_mask]
-    remain_labels = labels[remain_mask]
-
-    # Stratified split: first split off TEST fraction
+    # Stratified split on the full dataset (no special Day A handling)
     test_frac = float(getattr(CFG, 'TEST_SIZE_FRACTION', 0.20))
     val_frac = float(getattr(CFG, 'VALIDATION_SIZE_FRACTION', 0.15))
 
     X_trainval, X_test, y_trainval, y_test = train_test_split(
-        remain_paths, remain_labels, test_size=test_frac, stratify=remain_labels, random_state=getattr(CFG, 'RANDOM_SEED', 42))
+        paths, labels, test_size=test_frac, stratify=labels, random_state=getattr(CFG, 'RANDOM_SEED', 42))
 
     # Now split train/val from trainval
     # val_frac relative to remaining pool
@@ -64,22 +46,9 @@ def load_and_split_data():
     X_train, X_val, y_train, y_val = train_test_split(
         X_trainval, y_trainval, test_size=val_rel, stratify=y_trainval, random_state=getattr(CFG, 'RANDOM_SEED', 42))
 
-    # Final TEST must include at least one Day A ship (if present). Remaining Day A ships go to validation.
+    # Final TEST is the stratified split; no special enforcement
     X_test_final = list(X_test)
     y_test_final = list(y_test)
-    if len(day_a_ship_paths) > 0:
-        # Ensure at least one Day A ship in test
-        X_test_final.append(day_a_ship_paths[0])
-        y_test_final.append(1)
-        # Place any additional Day A ships into validation set
-        if len(day_a_ship_paths) > 1:
-            X_val = list(X_val)
-            y_val = list(y_val)
-            for extra in day_a_ship_paths[1:]:
-                X_val.append(extra)
-                y_val.append(1)
-            X_val = np.array(X_val)
-            y_val = np.array(y_val)
 
     # Build tf.data datasets from file paths
     image_size = getattr(CFG, 'IMAGE_SIZE', (256, 256))
@@ -91,17 +60,23 @@ def load_and_split_data():
         ds_labels = tf.data.Dataset.from_tensor_slices(labels_arr.astype('float32'))
         ds = tf.data.Dataset.zip((ds_paths, ds_labels))
 
+        # Build augmentation layer once to avoid retracing
+        augmenter = None
+        if augment:
+            augmenter = tf.keras.Sequential([
+                tf.keras.layers.RandomZoom(0.03),
+                tf.keras.layers.RandomTranslation(0.03, 0.02),
+                tf.keras.layers.RandomContrast(0.08),
+            ], name='augmenter')
+
         def _load(path, label):
             img = tf.io.read_file(path)
-            img = tf.image.decode_png(img, channels=getattr(CFG, 'CHANNELS', 3))
+            channels = 1 if getattr(CFG, 'GRAYSCALE_INPUT', False) else getattr(CFG, 'CHANNELS', 3)
+            img = tf.image.decode_png(img, channels=channels)
             img = tf.image.resize(img, image_size, method='bilinear')
             img = tf.cast(img, tf.float32) / 255.0
-            if augment:
-                img = tf.keras.Sequential([
-                    tf.keras.layers.RandomZoom(0.05),
-                    tf.keras.layers.RandomTranslation(0.05, 0.02),
-                    tf.keras.layers.RandomContrast(0.1),
-                ])(img)
+            if augmenter is not None:
+                img = augmenter(img, training=True)
             return img, tf.expand_dims(label, axis=-1)
 
         ds = ds.map(lambda p, y: _load(p, y), num_parallel_calls=tf.data.AUTOTUNE)
@@ -111,6 +86,19 @@ def load_and_split_data():
             ds = ds.cache()
         ds = ds.prefetch(tf.data.AUTOTUNE)
         return ds
+
+    # Apply oversampling to training set if configured
+    if getattr(CFG, 'OVERSAMPLE_SHIPS_FACTOR', 1) > 1:
+        factor = int(getattr(CFG, 'OVERSAMPLE_SHIPS_FACTOR', 1))
+        X_train_list = list(X_train)
+        y_train_list = list(y_train)
+        for p, lab in zip(X_train, y_train):
+            if lab == 1:
+                for _ in range(factor - 1):
+                    X_train_list.append(p)
+                    y_train_list.append(lab)
+        X_train = np.array(X_train_list)
+        y_train = np.array(y_train_list)
 
     train_ds = make_ds(np.array(X_train), np.array(y_train), augment=True)
     val_ds   = make_ds(np.array(X_val),   np.array(y_val),   augment=False)
