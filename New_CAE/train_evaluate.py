@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, GlobalAveragePooling2D, Dense, Dropout
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
@@ -65,16 +65,17 @@ def build_cnn_model(learning_rate, dropout_rate, num_conv_layers):
 
     # Dynamic Conv Blocks based on num_conv_layers
     for i in range(num_conv_layers - 1):
-        # Increase deeper capacity for large inputs (128, 256, ...)
-        filters = 128 * (2 ** i)
+        # CPU-friendly depth: 64, 128 for large inputs
+        filters = 64 * (2 ** i)
         model.add(Conv2D(filters, (3, 3), activation='relu'))
         model.add(MaxPooling2D((2, 2)))
         model.add(Dropout(dropout_rate))
 
-    model.add(Flatten())
-    
-    # Dense Layers
-    model.add(Dense(128, activation='relu'))
+    # Replace Flatten with Global Average Pooling to reduce memory
+    model.add(GlobalAveragePooling2D())
+
+    # Dense Layers (smaller head for CPU memory)
+    model.add(Dense(64, activation='relu'))
     model.add(Dropout(dropout_rate))
     
     # Output layer (Binary Classification: Ship or Noise)

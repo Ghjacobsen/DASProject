@@ -1,5 +1,5 @@
 """
-DAS Anomaly Detection Helpers — Storebælt project
+DAS Anomaly Detection Helpers
 -------------------------------------------------
 This helper file follows the same loading philosophy as the original
 das_loader notebook: safe HDF5 reading, correct metadata extraction,

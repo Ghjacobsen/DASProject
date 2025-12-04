@@ -10,7 +10,7 @@ RESULTS_DIR = 'results'  # central folder for champion model, temp best weights,
 # Image Parameters
 IMAGE_SIZE = (512, 1024)
 CHANNELS = 3  # RGB input for high-fidelity signals
-BATCH_SIZE = 32
+BATCH_SIZE = 2
 RANDOM_SEED = 42
 TEST_SIZE_FRACTION = 0.20   # 20% of remaining data used for test
 VALIDATION_SIZE_FRACTION = 0.15 # 15% of remaining data used for validation
@@ -42,4 +42,4 @@ REDUCE_LR_PATIENCE = 3
 
 # Data Tweaks
 GRAYSCALE_INPUT = False  # use RGB channels
-OVERSAMPLE_SHIPS_FACTOR = 2  # duplicate ship samples in train split
+OVERSAMPLE_SHIPS_FACTOR = 1  # avoid extra memory on CPU

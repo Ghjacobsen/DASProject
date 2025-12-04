@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 # Inputs
-POSITIVES_JSON = Path('..') / 'AIS' / 'results' / 'positive_predictions.json'
+FALSE_NEG_JSON = Path('..') / 'AIS' / 'results' / 'false_negative_predictions.json'
 ZIP_DIR = Path('..') / 'AIS' / 'zip'
 ZIP_MAP = {
     '2025-06-29': ('aisdk-2025-06-29.zip', 'aisdk-2025-06-29.csv'),
@@ -22,9 +22,9 @@ TIME_TOLERANCE_SEC = 120
 
 OUTPUT_DIR = Path('..') / 'AIS' / 'results'
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-MATCHES_CSV = OUTPUT_DIR / 'ais_matches.csv'
-UNMATCHED_CSV = OUTPUT_DIR / 'ais_unmatched.csv'
-SUMMARY_TXT = OUTPUT_DIR / 'ais_match_summary.txt'
+MATCHES_CSV = OUTPUT_DIR / 'ais_false_neg_matches.csv'
+UNMATCHED_CSV = OUTPUT_DIR / 'ais_false_neg_unmatched.csv'
+SUMMARY_TXT = OUTPUT_DIR / 'ais_false_neg_summary.txt'
 
 RELEVANT_COLUMNS = [
     '# Timestamp','Type of mobile','MMSI','Latitude','Longitude','Navigational status','SOG','COG','Heading','Name','Ship type','Width','Length','__sec_of_day','__time_of_day'
@@ -86,13 +86,13 @@ def load_ais_rows_for_date(date_key: str):
     return rows
 
 def main():
-    if not POSITIVES_JSON.exists():
-        raise FileNotFoundError(f"Positive predictions JSON not found: {POSITIVES_JSON}")
-    positives = json.loads(POSITIVES_JSON.read_text())
+    if not FALSE_NEG_JSON.exists():
+        raise FileNotFoundError(f"False negative predictions JSON not found: {FALSE_NEG_JSON}")
+    false_negs = json.loads(FALSE_NEG_JSON.read_text())
 
-    # Group positives by ais_date
+    # Group false negatives by ais_date
     by_date = {}
-    for rec in positives:
+    for rec in false_negs:
         date_key = rec['ais_date']
         if date_key not in by_date:
             by_date[date_key] = []
@@ -190,14 +190,14 @@ def main():
     matches_df.to_csv(MATCHES_CSV, index=False)
     unmatched_df.to_csv(UNMATCHED_CSV, index=False)
 
-    total_preds = len(positives)
+    total_preds = len(false_negs)
     total_matches = len(matches_df)
     match_rate = (total_matches / total_preds) if total_preds else 0.0
 
     summary_lines = [
-        f"Total positive predictions: {total_preds}",
-        f"Total matched predictions: {total_matches}",
-        f"Total unmatched predictions: {len(unmatched_df)}",
+        f"Total false negative predictions: {total_preds}",
+        f"Total matched (AIS present) false negatives: {total_matches}",
+        f"Total unmatched (no AIS within tolerance) false negatives: {len(unmatched_df)}",
         f"Match rate: {match_rate:.2%}",
         "", "Per-date breakdown:" ]
     for date_key in by_date.keys():
