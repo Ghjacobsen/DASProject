@@ -1,2 +1,0 @@
-hhmmss,prediction_filename,ais_date,prediction_seconds,ship_probability,matched,num_matches,mmsi_list,names,closest_time_of_day,closest_time_delta_sec,closest_lat,closest_lon,closest_sog,closest_cog
-121906,121906_T30s.png,2025-07-02,44346,0.593425,True,10,992191536;992191537,EAST;WEST,,-4,55.342850,11.042867,,

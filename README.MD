@@ -1,5 +1,5 @@
-Dette er et projekt i forbindelse med 02456 Deep Learning på DTU der omhandler DAS teknologien.
+Der er stadig gang med at blive arbejdet på dette projekt.
 
-Et groft overblik over hvad der er belevet lavet i projektet kan findes i Summary.ipynb, ellers så gennemgår rapporten det i de detaljer der nu engang er muligt i sådan et projekts omfang.
+Hvis man er interessseret i at se hvad der blev gjort til Deep Learning kurset i efteråret så henviser jeg til Legacy også summary notebook derinde.
 
-henvendelser bedes rettes til s214374@dtu.dk
+ellers ret henvendelser til s214374@dtu.dk

@@ -1,7 +1,0 @@
-Total positive predictions: 5
-Total matched predictions: 1
-Total unmatched predictions: 4
-Match rate: 20.00%
-
-Per-date breakdown:
-  2025-07-02: preds=5, matches=1, rate=20.00%
