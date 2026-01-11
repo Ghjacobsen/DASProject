@@ -5,16 +5,30 @@ from pathlib import Path
 import typer
 from tqdm import tqdm
 from torch.utils.data import Dataset
+from scipy.signal import butter, filtfilt
+from scipy.ndimage import gaussian_filter
 
 # Configuration Constants
 WINDOW_SEC = 60              # Window duration in seconds
-OVERLAP_SEC = 10             # Overlap duration in seconds (e.g., 20s overlap = 10s step)
-SPATIAL_LIMIT_KM = 60        # Clip data beyond 60km to remove high-intensity noise [2]
+OVERLAP_SEC = 40             # Overlap duration in seconds (e.g., 20s overlap = 10s step)
+SPATIAL_START_KM = 0.1         # Start of spatial range (clip data before this point)
+SPATIAL_LIMIT_KM = 10        # Clip data beyond 10km to remove high-intensity noise [2]
 DOWNSAMPLE_TIME = 10         # Decimate time to reduce image height (625Hz is too high for raw images)
 DOWNSAMPLE_SPACE = 1         # Keep spatial resolution or decimate if needed
 IMAGE_MODE = 'DATA'          # Modes for image saving 'DATA' for raw, 'VISUALIZATION' for colormap
 BACKGROUND_WINDOW_SEC = 300  # Window for rolling median background subtraction
 TILE_SIZE = 640              # Tile size in pixels (square tiles)
+
+# Masking Configuration (for cable defects)
+MASK_ENABLED = True          # Enable/disable spatial masking
+MASK_START_KM = 1.0          # Start of masked region (km)
+MASK_END_KM = 2.0            # End of masked region (km)
+
+# Bandpass Filter Configuration (for ocean noise removal)
+BANDPASS_ENABLED = True      # Enable/disable temporal bandpass filtering
+BANDPASS_LOW = 1.0           # Low cutoff frequency (Hz) - removes ocean swell
+BANDPASS_HIGH = 10.0         # High cutoff frequency (Hz) - removes high-freq noise
+BANDPASS_ORDER = 4           # Filter order (3-4 for stability)
 
 class MyDataset(Dataset):
     """
@@ -118,20 +132,53 @@ class MyDataset(Dataset):
                 print(f"\nWindow {window_idx}: {base_name} ({len(chunk_files)} files)")
                 print(f"Combined data shape: {data.shape}")
                 
-                # 2. Spatial Clipping 
+                # 2. Spatial Range Clipping (both start and end)
+                min_spatial_idx = int(SPATIAL_START_KM * 1000 / dx)
                 max_spatial_idx = int(SPATIAL_LIMIT_KM * 1000 / dx)
-                if data.shape[1] > max_spatial_idx:
-                    data = data[:, :max_spatial_idx]
+                # Ensure indices are within bounds
+                min_spatial_idx = max(0, min(min_spatial_idx, data.shape[1]))
+                max_spatial_idx = max(min_spatial_idx, min(max_spatial_idx, data.shape[1]))
+                data = data[:, min_spatial_idx:max_spatial_idx]
+                print(f"  Spatial range: {SPATIAL_START_KM}-{SPATIAL_LIMIT_KM} km (indices {min_spatial_idx}-{max_spatial_idx})")
+
+                # 2.5. Spatial Masking (Cable Defect Removal)
+                if MASK_ENABLED:
+                    # Adjust mask indices relative to the clipped spatial range
+                    mask_start_idx = int((MASK_START_KM - SPATIAL_START_KM) * 1000 / dx)
+                    mask_end_idx = int((MASK_END_KM - SPATIAL_START_KM) * 1000 / dx)
+                    # Ensure indices are within bounds
+                    mask_start_idx = max(0, min(mask_start_idx, data.shape[1]))
+                    mask_end_idx = max(0, min(mask_end_idx, data.shape[1]))
+                    if mask_start_idx < mask_end_idx:
+                        data[:, mask_start_idx:mask_end_idx] = 0
+                        print(f"  Masked spatial region: {MASK_START_KM}-{MASK_END_KM} km (indices {mask_start_idx}-{mask_end_idx})")
+
+                # 2.6. Temporal Bandpass Filtering (Ocean Noise Removal)
+                if BANDPASS_ENABLED:
+                    fs = 1.0 / dt  # Sampling frequency
+                    nyq = 0.5 * fs  # Nyquist frequency
+                    low = BANDPASS_LOW / nyq
+                    high = BANDPASS_HIGH / nyq
+                    
+                    # Design Butterworth bandpass filter
+                    b, a = butter(BANDPASS_ORDER, [low, high], btype='band')
+                    
+                    # Apply filter to each channel (spatial location)
+                    for ch in range(data.shape[1]):
+                        data[:, ch] = filtfilt(b, a, data[:, ch])
+                    
+                    print(f"  Applied Butterworth bandpass filter: {BANDPASS_LOW}-{BANDPASS_HIGH} Hz (order {BANDPASS_ORDER})")
 
                 # 3. Background Subtraction (The 'Pylon' Fix)
                 data = data - np.median(data, axis=0)  # Initial median removal
 
-                # 4. Normalization (99th Percentile)
-                v_max = np.percentile(np.abs(data), 99)
-                data = np.clip(data, -v_max, v_max)
+                # 4. Normalization (Hybrid: Per-channel clipping + Global normalization)
+                # Per-channel 99th percentile clipping (suppresses noise independently)
+                v_max_per_channel = np.percentile(np.abs(data), 99, axis=0)
+                data = np.clip(data, -v_max_per_channel, v_max_per_channel)
                 
-                # Normalize to 0-1 range for image saving
-                data = (data - data.min()) / (data.max() - data.min())
+                # Global min-max normalization (creates smooth, consistent images for YOLO)
+                data = (data - data.min()) / (data.max() - data.min() + 1e-8)
 
                 # 5. Downsampling
                 data = data[::DOWNSAMPLE_TIME, ::DOWNSAMPLE_SPACE]
@@ -188,7 +235,7 @@ class MyDataset(Dataset):
                                 tile = np.pad(tile, ((0, pad_t), (0, pad_s)), mode='constant')
 
                             save_name = output_folder / f"{base_name}_tile{tile_idx}.png"
-                            plt.imsave(save_name, tile, cmap='gray', vmin=0, vmax=1)
+                            plt.imsave(save_name, tile, cmap='ocean', vmin=0, vmax=1)
                             tile_idx += 1
 
                 # Advance by step size (not full window)
