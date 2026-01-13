@@ -28,3 +28,6 @@ DASProject/data/visualizations/092625-092645.png
 DASProject/data/visualizations/092605-092625.png
 DASProject/data/visualizations/092555-092615.png
 Legacy/__pycache__/Helpers.cpython-311.pyc
+
+NytProjekt/images/*
+NytProjekt/images_old/*

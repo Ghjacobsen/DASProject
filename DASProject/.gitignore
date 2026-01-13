@@ -182,3 +182,5 @@ data/raw/*
 #Remove processed data for now.
 data/processed/*
 data/visualization/*
+
+data/*
