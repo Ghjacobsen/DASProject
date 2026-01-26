@@ -5,7 +5,6 @@ Das Project
 
 Noter til Gustav
 
-- Husk at ændre window size og ligge et par filer oveni hinanden, så måske 6 filer = 60 sekunder også kører vi måske sådan 60% vindue overlap, så det blir 40sek.
 
 - Fíx logikken for det, lige nu er det lidt mystisk. måske skal vi heller ikke hardcappe på 60km, så er der nogen sjove billeder.
 
