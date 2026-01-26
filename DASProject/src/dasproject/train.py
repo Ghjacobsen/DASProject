@@ -9,6 +9,7 @@ import logging
 
 from src.dasproject.data import DASDataset
 from src.dasproject.model import ConvAutoencoder
+from src.dasproject.utils import get_device
 
 def train_epoch(model, dataloader, criterion, optimizer, device):
     """Runs one epoch of training."""
@@ -47,7 +48,7 @@ def run_grid_search(config):
         best_model: The model with lowest validation loss.
         best_params: Dict of parameters used for that model.
     """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_device()
     print(f"Device: {device}")
 
     # 1. Prepare Data

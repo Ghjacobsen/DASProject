@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from torch.utils.data import DataLoader
 from src.dasproject.data import DASDataset
+from src.dasproject.utils import get_device
 
 def stitch_patches(patches, original_shape, patch_size):
     """
@@ -35,7 +36,7 @@ def run_inference_and_save(model, config, input_dir, output_dir):
         output_dir (str or Path): Folder to save residual .h5 files
     """
     logger = logging.getLogger(__name__)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_device()
     model.to(device)
     model.eval()
 
@@ -73,7 +74,7 @@ def run_inference_and_save(model, config, input_dir, output_dir):
             logger.warning(f"Skipping {file_path.name} (Dataset empty)")
             continue
 
-        dataloader = DataLoader(dataset, batch_size=32, shuffle=False)
+        dataloader = DataLoader(dataset, batch_size=config['training']['inference_batch_size'], shuffle=False)
         
         file_residuals = []
         t_compute_accum = 0.0 # Accumulator for pure model time

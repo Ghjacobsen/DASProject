@@ -2,6 +2,21 @@ import yaml
 from pathlib import Path
 import logging
 import sys
+import torch
+
+def get_device():
+    """
+    Returns the appropriate device (CUDA if available, otherwise CPU).
+    
+    This function provides a single source of truth for device selection
+    across the entire pipeline, enabling seamless CPU/GPU portability.
+    
+    Returns:
+        torch.device: The device to use for model training and inference.
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logging.getLogger(__name__).info(f"Using device: {device}")
+    return device
 
 def load_config(config_path="config.yaml"):
     """

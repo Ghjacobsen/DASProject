@@ -28,6 +28,7 @@ hyperparameter_search:
 training:
   epochs: 20
   batch_size: 32
+  inference_batch_size: 32
   patience: 5 # Early stopping
   seed: 42
 
