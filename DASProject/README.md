@@ -9,11 +9,6 @@ Noter til Gustav
 
 - Fíx logikken for det, lige nu er det lidt mystisk. måske skal vi heller ikke hardcappe på 60km, så er der nogen sjove billeder.
 
-
-
-
-
-
 ## Project structure
 
 The directory structure of the project looks like this:
